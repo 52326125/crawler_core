@@ -3,6 +3,7 @@ from models.htmlParser import HTMLParser
 
 
 if __name__ == "__main__":
+    # TODO: remove
     crawler = GoldenHouse("https://tw.hjwzw.com/Book/Chapter/1642")
     book = crawler.get_book(HTMLParser.LXML)
     chapters = crawler.get_content(

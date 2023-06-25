@@ -1,1 +1,0 @@
-BOOK_REFRESH_IN = 7

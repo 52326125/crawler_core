@@ -37,7 +37,7 @@ class GoldenHouse(Crawler):
         except:
             return None
 
-    # @retry
+    @retry
     def get_content(self, url, parser):
         result: str = ""
 
