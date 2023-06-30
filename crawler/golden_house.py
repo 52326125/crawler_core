@@ -1,26 +1,27 @@
 from typing import List
 from bs4 import BeautifulSoup
 import requests
-from models.crawler.golden_house import GoldenHouseConfig
+from crawler.config.golden_house import GoldenHouseConfig
 from models.crawler import CrawlerWebsite
 from models.htmlParser import HTMLParser
 from crawler import Crawler
 from models.crawler import Book, Chapter
 from crawler.retry import retry
+import uuid
 
 
 class GoldenHouse(Crawler):
     website = CrawlerWebsite.GOLDEN_HOUSE
 
-    def __init__(self, url: str) -> None:
-        self.book_url = url
-        self.book_identifier = url.split("/")[-1].split(",")[0]
+    def __init__(self) -> None:
+        self.book_identifier = uuid.uuid4()
         self.config = GoldenHouseConfig
 
-    def get_book(self, parser: HTMLParser) -> Book | None:
+    # TODO: should throw error if excepted
+    def get_book(self, url: str, parser: HTMLParser) -> Book | None:
         try:
             chapters: List["Chapter"] = []
-            response = requests.get(self.book_url)
+            response = requests.get(url)
             soup = BeautifulSoup(response.text, parser)
             matchedTags = soup.select(self.config.CHAPTERS_QUERY_SELECTOR)
 
@@ -38,7 +39,7 @@ class GoldenHouse(Crawler):
             return None
 
     @retry
-    def get_content(self, url, parser):
+    def get_content(self, url: str, parser: HTMLParser):
         result: str = ""
 
         response = requests.get(url)

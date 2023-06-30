@@ -1,50 +1,73 @@
-#!/usr/bin/env python
-import pika
+import asyncio
 import uuid
+from typing import MutableMapping
+
+from aio_pika import Message, connect
+from aio_pika.abc import (
+    AbstractChannel,
+    AbstractConnection,
+    AbstractIncomingMessage,
+    AbstractQueue,
+)
 
 
-class FibonacciRpcClient(object):
-    def __init__(self):
-        self.connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host="localhost")
+class FibonacciRpcClient:
+    connection: AbstractConnection
+    channel: AbstractChannel
+    callback_queue: AbstractQueue
+    loop: asyncio.AbstractEventLoop
+
+    def __init__(self) -> None:
+        self.futures: MutableMapping[str, asyncio.Future] = {}
+        self.loop = asyncio.get_running_loop()
+
+    async def connect(self) -> "FibonacciRpcClient":
+        self.connection = await connect(
+            "amqp://guest:guest@localhost/",
+            loop=self.loop,
         )
+        self.channel = await self.connection.channel()
+        self.callback_queue = await self.channel.declare_queue(exclusive=True)
+        await self.callback_queue.consume(self.on_response, no_ack=True)
 
-        self.channel = self.connection.channel()
+        return self
 
-        result = self.channel.queue_declare(queue="", exclusive=True)
-        self.callback_queue = result.method.queue
+    async def on_response(self, message: AbstractIncomingMessage) -> None:
+        if message.correlation_id is None:
+            print(f"Bad message {message!r}")
+            return
 
-        self.channel.basic_consume(
-            queue=self.callback_queue,
-            on_message_callback=self.on_response,
-            auto_ack=True,
-        )
+        future: asyncio.Future = self.futures.pop(message.correlation_id)
+        future.set_result(message.body)
 
-        self.response = None
-        self.corr_id = None
+    async def call(self, n: int) -> int:
+        correlation_id = str(uuid.uuid4())
+        future = self.loop.create_future()
 
-    def on_response(self, ch, method, props, body):
-        if self.corr_id == props.correlation_id:
-            self.response = body
+        self.futures[correlation_id] = future
 
-    def call(self, n):
-        self.response = None
-        self.corr_id = str(uuid.uuid4())
-        self.channel.basic_publish(
-            exchange="",
-            routing_key="rpc_queue",
-            properties=pika.BasicProperties(
-                reply_to=self.callback_queue,
-                correlation_id=self.corr_id,
+        await self.channel.default_exchange.publish(
+            Message(
+                str(n).encode(),
+                content_type="text/plain",
+                correlation_id=correlation_id,
+                reply_to=self.callback_queue.name,
             ),
-            body=str(n),
+            routing_key="rpc_queue",
         )
-        self.connection.process_data_events(time_limit=None)
-        return int(self.response)
+
+        return int(await future)
 
 
-fibonacci_rpc = FibonacciRpcClient()
+async def main() -> None:
+    fibonacci_rpc = await FibonacciRpcClient().connect()
+    print(" [x] Requesting fib(30)")
+    for i in range(10):
+        response = await fibonacci_rpc.call(
+            '{"cmd":"CRAWL_BOOK","payload":{"url":"https://tw.hjwzw.com/Book/Chapter/1642","parser":"html5lib"}}'
+        )
+        print(f" [.] Got {response!r}")
 
-print(" [x] Requesting fib(30)")
-response = fibonacci_rpc.call(10)
-print(" [.] Got %r" % response)
+
+if __name__ == "__main__":
+    asyncio.run(main())
