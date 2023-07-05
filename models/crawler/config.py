@@ -6,3 +6,4 @@ class CrawlerConfig(BaseModel):
     CHAPTERS_QUERY_SELECTOR: str
     CONTENT_QUERY_SELECTOR: str
     BOOK_NAME_QUERY_SELECTOR: str
+    COVER_BASE_URL: str

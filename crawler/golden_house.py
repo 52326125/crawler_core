@@ -28,11 +28,13 @@ class GoldenHouse(Crawler):
             nameTag = soup.select_one(self.config.BOOK_NAME_QUERY_SELECTOR)
             name = nameTag.text if nameTag else ""
 
+            cover_url = self.get_cover(url)
+
             for tag in matchedTags:
                 chapter: Chapter = {"url": tag["href"], "title": tag.text}
                 chapters.append(chapter)
 
-            book = Book(chapters=chapters, name=name)
+            book = Book(chapters=chapters, name=name, cover_url=cover_url)
 
             return book
         except:
@@ -52,3 +54,7 @@ class GoldenHouse(Crawler):
             result = result + str(p)
 
         return result
+
+    def get_cover(self, url: str) -> str:
+        book_id = url.split("/")[-1]
+        return self.config.COVER_BASE_URL + book_id + ".jpg"

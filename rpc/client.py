@@ -37,6 +37,8 @@ class FibonacciRpcClient:
             print(f"Bad message {message!r}")
             return
 
+        print(message)
+
         future: asyncio.Future = self.futures.pop(message.correlation_id)
         future.set_result(message.body)
 
@@ -56,7 +58,7 @@ class FibonacciRpcClient:
             routing_key="rpc_queue",
         )
 
-        return int(await future)
+        return await future
 
 
 async def main() -> None:

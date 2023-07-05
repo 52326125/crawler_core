@@ -17,3 +17,4 @@ class Book(BaseModel):
     name: str
     chapters: List[Chapter]
     updated_at: datetime = datetime.today()
+    cover_url: str

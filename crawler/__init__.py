@@ -17,3 +17,7 @@ class Crawler(ABC):
     @abstractmethod
     def get_content(self, url: str, parser: HTMLParser) -> str:
         pass
+
+    @abstractmethod
+    def get_cover(self, url: str) -> str:
+        pass

@@ -6,7 +6,7 @@ from aio_pika import Message, connect
 from aio_pika.abc import AbstractIncomingMessage
 from crawler import Crawler
 from crawler.dispatcher import dispatch_crawler
-from models.rpc.dispatch_payload import CrawlerPayload
+from models.rpc.dispatcher_payload import CrawlerPayload
 from models.rpc.message import CmdEnum, MessageBody
 
 from utils.json import json_2_pydantic, str_2_pydantic
