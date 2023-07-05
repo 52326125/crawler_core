@@ -8,14 +8,14 @@ from crawler import Crawler
 from crawler.dispatcher import dispatch_crawler
 from models.rpc.dispatcher_payload import CrawlerPayload
 from models.rpc.message import CmdEnum, MessageBody
+from rpc.crawl_book import crawl_book
+from utils.config import get_config
 
 from utils.json import json_2_pydantic, str_2_pydantic
 
 
-def new_crawler_instance(body: MessageBody) -> Tuple[Crawler | None, CrawlerPayload]:
-    payload = json_2_pydantic(body.payload, CrawlerPayload)
-    crawler = dispatch_crawler(payload.url)
-    return crawler, payload
+config = get_config()
+print(config.STORAGE_PATH)
 
 
 async def main() -> None:
@@ -44,9 +44,7 @@ async def main() -> None:
                     body = str_2_pydantic(body_str, MessageBody)
 
                     if body.cmd == CmdEnum.CRAWL_BOOK:
-                        # done
-                        crawler, payload = new_crawler_instance(body)
-                        response = crawler.get_book(payload.url, payload.parser)
+                        response = crawl_book(body)
                     elif body.cmd == CmdEnum.CRAWL_CHAPTER:
                         # done
                         crawler, payload = new_crawler_instance(body)

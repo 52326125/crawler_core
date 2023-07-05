@@ -14,7 +14,7 @@ class GoldenHouse(Crawler):
     website = CrawlerWebsite.GOLDEN_HOUSE
 
     def __init__(self) -> None:
-        self.book_identifier = uuid.uuid4()
+        self.book_identifier = str(uuid.uuid4())
         self.config = GoldenHouseConfig
 
     # TODO: should throw error if excepted
