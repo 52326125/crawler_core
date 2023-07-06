@@ -8,6 +8,10 @@ class CrawlerPayload(BaseModel):
     parser: HTMLParser
 
 
+class CrawlerChapterPayload(CrawlerPayload):
+    book_id: str
+
+
 class BuilderPayload(BaseModel):
     title: str
     folder_path: str

@@ -3,7 +3,10 @@ from pydantic import BaseModel
 
 class CrawlerConfig(BaseModel):
     BASE_URL: str
-    CHAPTERS_QUERY_SELECTOR: str
-    CONTENT_QUERY_SELECTOR: str
+    # toc
     BOOK_NAME_QUERY_SELECTOR: str
+    CHAPTERS_QUERY_SELECTOR: str
     COVER_BASE_URL: str
+    # chapter
+    CONTENT_QUERY_SELECTOR: str
+    TITLE_QUERY_SELECTOR: str

@@ -8,13 +8,22 @@ class CrawlerWebsite(str, Enum):
     GOLDEN_HOUSE = "golden_house"
 
 
-class Chapter(TypedDict):
+class BaseInstance(BaseModel):
+    identifier: str
+
+
+class ChapterLink(TypedDict):
     url: str | List[str]
     title: str
 
 
-class Book(BaseModel):
-    name: str
-    chapters: List[Chapter]
+class Book(BaseInstance):
+    title: str
+    chapters: List[ChapterLink]
     updated_at: datetime = datetime.today()
     cover_url: str
+
+
+class Chapter(BaseInstance):
+    title: str
+    content: str

@@ -1,4 +1,5 @@
 import asyncio
+from time import sleep
 import uuid
 from typing import MutableMapping
 
@@ -64,9 +65,13 @@ class FibonacciRpcClient:
 async def main() -> None:
     fibonacci_rpc = await FibonacciRpcClient().connect()
     print(" [x] Requesting fib(30)")
-    for i in range(10):
+    for i in range(1):
         response = await fibonacci_rpc.call(
             '{"cmd":"CRAWL_BOOK","payload":{"url":"https://tw.hjwzw.com/Book/Chapter/1642","parser":"html5lib"}}'
+        )
+        sleep(1)
+        response = await fibonacci_rpc.call(
+            '{"cmd":"CRAWL_CHAPTER","payload":{"url":"https://tw.hjwzw.com/Book/Read/1642,530186","parser":"lxml","book_id":1642}}'
         )
         print(f" [.] Got {response!r}")
 

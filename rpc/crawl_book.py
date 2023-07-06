@@ -12,6 +12,6 @@ def crawl_book(body: MessageBody):
     if book is None:
         raise Exception()
 
-    path = os.path.join(config.STORAGE_PATH, crawler.website, crawler.book_identifier)
-    os.makedirs(path)
+    path = os.path.join(config.STORAGE_PATH, crawler.website, book.identifier)
+    os.makedirs(path, exist_ok=True)
     return book
