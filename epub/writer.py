@@ -39,7 +39,7 @@ class EpubWriter:
         self.__book.add_item(chapter)
         self.__chapters.append(chapter)
 
-    def add__global_style(self, content: str):
+    def add_global_style(self, content: str):
         if not self.__global_style:
             self.__global_style = EpubItem(
                 file_name="global.css", media_type="text/css"

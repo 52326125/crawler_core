@@ -11,6 +11,8 @@ from aio_pika.abc import (
     AbstractQueue,
 )
 
+from models.crawler import Book
+
 
 class FibonacciRpcClient:
     connection: AbstractConnection
@@ -65,15 +67,31 @@ class FibonacciRpcClient:
 async def main() -> None:
     fibonacci_rpc = await FibonacciRpcClient().connect()
     print(" [x] Requesting fib(30)")
-    for i in range(1):
-        response = await fibonacci_rpc.call(
-            '{"cmd":"CRAWL_BOOK","payload":{"url":"https://tw.hjwzw.com/Book/Chapter/1642","parser":"html5lib"}}'
-        )
-        sleep(1)
-        response = await fibonacci_rpc.call(
-            '{"cmd":"CRAWL_CHAPTER","payload":{"url":"https://tw.hjwzw.com/Book/Read/1642,530186","parser":"lxml","book_id":1642}}'
-        )
-        print(f" [.] Got {response!r}")
+    # response: bytes = await fibonacci_rpc.call(
+    #     '{"cmd":"CRAWL_BOOK","payload":{"url":"https://tw.hjwzw.com/Book/Chapter/44236","parser":"html5lib"}}'
+    # )
+    # decoded = response.decode("utf-8")
+    # book = Book.parse_raw(decoded)
+    # for chapter in book.chapters:
+    #     print(
+    #         '{"cmd":"CRAWL_CHAPTER","payload":{"url":"'
+    #         + chapter["url"]
+    #         + '","parser":"html5lib","book_id":44236}}'
+    #     )
+    #     await fibonacci_rpc.call(
+    #         '{"cmd":"CRAWL_CHAPTER","payload":{"url":"'
+    #         + chapter["url"]
+    #         + '","parser":"html5lib","book_id":44236}}'
+    #     )
+    #     sleep(0.5)
+    # sleep(1)
+    # response = await fibonacci_rpc.call(
+    #     '{"cmd":"CRAWL_CHAPTER","payload":{"url":"https://tw.hjwzw.com/Book/Read/1642,530186","parser":"html5lib","book_id":1642}}'
+    # )
+    # print(f" [.] Got {response!r}")
+    # await fibonacci_rpc.call(
+    #     '{"cmd":"EPUB_BUILD","payload":{"user_id":1,"book_id":44236,"name":"詭秘地海","crawler":"golden_house","options":{"opencc":"t2s.json","is_vertical":true,"cover_path":"https://tw.hjwzw.com/images/id/44236.jpg","direction":"rtl","chapters":["20286720","20286721"]}}}'
+    # )
 
 
 if __name__ == "__main__":

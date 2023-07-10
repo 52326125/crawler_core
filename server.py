@@ -1,18 +1,13 @@
 import asyncio
 import logging
-from typing import Tuple
 
 from aio_pika import Message, connect
 from aio_pika.abc import AbstractIncomingMessage
-from crawler import Crawler
-from crawler.dispatcher import dispatch_crawler
-from models.rpc.dispatcher_payload import CrawlerPayload
 from models.rpc.message import CmdEnum, MessageBody
-from rpc.crawl_chapter import crawl_chapter
-from rpc.crawl_book import crawl_book
+from rpc.dispatcher import Dispatcher
 from utils.config import get_config
 
-from utils.json import json_2_pydantic, str_2_pydantic
+from utils.json import str_2_pydantic
 
 
 config = get_config()
@@ -42,18 +37,18 @@ async def main() -> None:
 
                     body_str = message.body.decode()
                     body = str_2_pydantic(body_str, MessageBody)
+                    dispatcher = Dispatcher()
 
                     if body.cmd == CmdEnum.CRAWL_BOOK:
-                        response = crawl_book(body)
+                        response = dispatcher.crawl_book(body)
                     elif body.cmd == CmdEnum.CRAWL_CHAPTER:
-                        # done
-                        response = crawl_chapter(body)
+                        response = dispatcher.crawl_chapter(body)
                     elif body.cmd == CmdEnum.EPUB_BUILD:
-                        print("3")
+                        dispatcher.build_book(body)
 
                     await exchange.publish(
                         Message(
-                            body=str(response).encode(),
+                            body=response.json(ensure_ascii=False).encode(),
                             correlation_id=message.correlation_id,
                         ),
                         routing_key=message.reply_to,
