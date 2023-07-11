@@ -55,13 +55,11 @@ class GoldenHouse(Crawler):
         except:
             return None
 
-    # @retry
+    @retry
     def get_chapter(self, url: str, parser: HTMLParser) -> Chapter:
         result: str = ""
-
         response = requests.get(url)
         response.encoding = response.apparent_encoding
-        print(response)
         if response.status_code != 200:
             print(response.status_code)
             raise Exception()
