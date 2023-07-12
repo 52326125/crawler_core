@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from models.converter.opencc import OpenCCModel
 
 from models.crawler import Book, Chapter, CrawlerWebsite
 from models.crawler.config import CrawlerConfig
@@ -10,11 +11,15 @@ class Crawler(ABC):
     config: CrawlerConfig
 
     @abstractmethod
-    def get_book(self, url: str, parser: HTMLParser) -> Book:
+    def get_book(
+        self, url: str, parser: HTMLParser, opencc: OpenCCModel | None = None
+    ) -> Book:
         pass
 
     @abstractmethod
-    def get_chapter(self, url: str, parser: HTMLParser) -> Chapter:
+    def get_chapter(
+        self, url: str, parser: HTMLParser, opencc: OpenCCModel | None
+    ) -> Chapter:
         pass
 
     @abstractmethod

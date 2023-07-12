@@ -2,7 +2,9 @@ from typing import List
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 import requests
+from converter.opencc import convert_opencc
 from crawler.config.golden_house import GoldenHouseConfig
+from models.converter.opencc import OpenCCModel
 from models.crawler import Chapter, CrawlerWebsite
 from models.htmlParser import HTMLParser
 from crawler import Crawler
@@ -18,7 +20,9 @@ class GoldenHouse(Crawler):
         self.config = GoldenHouseConfig
 
     # TODO: should throw error if excepted
-    def get_book(self, url: str, parser: HTMLParser) -> Book | None:
+    def get_book(
+        self, url: str, parser: HTMLParser, opencc: OpenCCModel | None
+    ) -> Book | None:
         try:
             chapters: List["ChapterLink"] = []
             response = requests.get(url)
@@ -27,13 +31,14 @@ class GoldenHouse(Crawler):
             parsed_book_url = urlparse(url)
 
             titleTag = soup.select_one(self.config.BOOK_NAME_QUERY_SELECTOR)
-            title = titleTag.text if titleTag else ""
+            title = convert_opencc(titleTag.text, opencc) if titleTag else ""
             book_id = self.get_book_id(url)
 
             cover_url = self.get_cover(url)
 
             for tag in matchedTags:
                 chapter_url = tag["href"]
+                chapter_title = convert_opencc(tag.text, opencc)
                 if chapter_url.startswith("/"):
                     chapter_url = (
                         parsed_book_url.scheme
@@ -41,7 +46,7 @@ class GoldenHouse(Crawler):
                         + parsed_book_url.netloc
                         + chapter_url
                     )
-                chapter: ChapterLink = {"url": chapter_url, "title": tag.text}
+                chapter: ChapterLink = {"url": chapter_url, "title": chapter_title}
                 chapters.append(chapter)
 
             book = Book(
@@ -56,7 +61,9 @@ class GoldenHouse(Crawler):
             return None
 
     @retry
-    def get_chapter(self, url: str, parser: HTMLParser) -> Chapter:
+    def get_chapter(
+        self, url: str, parser: HTMLParser, opencc: OpenCCModel | None = None
+    ) -> Chapter:
         result: str = ""
         response = requests.get(url)
         response.encoding = response.apparent_encoding
@@ -72,7 +79,7 @@ class GoldenHouse(Crawler):
         chapter_id = url.split(",")[-1]
 
         for p in content:
-            result = result + str(p).strip()
+            result = result + convert_opencc(str(p).strip(), opencc)
 
         chapter = Chapter(identifier=chapter_id, title=title, content=result)
         return chapter

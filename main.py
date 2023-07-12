@@ -1,16 +1,16 @@
 from concurrent.futures import ThreadPoolExecutor, Future, as_completed
 import os
-import sys
 from typing import Optional, Tuple
 from crawler import Crawler
 from crawler.dispatcher import dispatch_crawler
-from crawler.golden_house import GoldenHouse
+from epub.utils import create_vertical_writing_style
 from epub.writer import EpubWriter
+from models.converter.opencc import OpenCCModel
 from models.crawler import Book, Chapter, ChapterLink
 from models.epub.chapter import EpubChapterProps
-from models.epub.metadata import EpubMetadata
+from models.epub.metadata import EpubDirection, EpubMetadata
 from models.htmlParser import HTMLParser
-from utils.common import exec_with_description, get_int_input
+from utils.common import exec_with_description, get_bool_input, get_int_input
 from utils.config import get_config
 from utils.wrapper import select_parser
 
@@ -30,25 +30,42 @@ def press_to_exit(description: Optional[str]):
         os._exit()
 
 
-def get_crawler() -> Crawler:
+def select_opencc_model() -> OpenCCModel | None:
+    opencc_str = ""
+    opencc_len = len(OpenCCModel)
+    for index, value in enumerate(OpenCCModel):
+        opencc_str += f"{index})更改opencc轉換器模組：{value}\n"
+    opencc_str += f"{opencc_len})不使用opencc轉換器"
+    action = get_int_input(
+        description=f"請問是否使用opencc轉換器對書本內容進行轉換？\n{opencc_str}", min=0, max=opencc_len
+    )
+    if action == opencc_len:
+        return None
+    else:
+        return list(OpenCCModel)[action]
+
+
+def get_crawler() -> Tuple[Crawler, str]:
     book_url = input("請輸入書本網址：")
     crawler = dispatch_crawler(book_url)
     if crawler is None:
         print("無法正確匹配抓取器")
         press_to_exit()
-    return crawler
+    return crawler, book_url
 
 
 @select_parser(parser_key="parser")
-def parse_book(crawler: Crawler, parser: HTMLParser) -> Book:
+def parse_book(
+    crawler: Crawler, parser: HTMLParser, url: str, opencc: OpenCCModel | None
+) -> Book:
     book = exec_with_description(
-        crawler.get_book, description="獲取書本資料", url=book_url, parser=parser
+        crawler.get_book, description="獲取書本資料", url=url, parser=parser, opencc=opencc
     )
     chapter_count = len(book.chapters)
     chapter_preview = ""
-    for i in range(min(chapter_count, 10)):
+    for i in range(min(chapter_count, 5)):
         chapter_preview += book.chapters[i]["title"] + "\n"
-    print(f"""獲取書本資料節錄如下：\n標題：{book.title}\n章節：{chapter_preview}""")
+    print(f"""獲取書本資料節錄如下：\n標題：{book.title}\n章節：\n{chapter_preview}""")
     return book
 
 
@@ -67,13 +84,17 @@ def select_chapter_parser(
 
 
 def handle_thread(
-    chapter_link: ChapterLink, crawler: Crawler, parser: HTMLParser
+    chapter_link: ChapterLink,
+    crawler: Crawler,
+    parser: HTMLParser,
+    opencc: OpenCCModel | None,
 ) -> Tuple[EpubChapterProps, Chapter]:
     chapter = exec_with_description(
         crawler.get_chapter,
         url=chapter_link["url"],
         parser=parser,
         description=f"獲取章節：{chapter_link['title']}",
+        opencc=opencc,
     )
     props = EpubChapterProps(
         identifier=chapter.identifier,
@@ -89,22 +110,41 @@ def handle_thread_done(future: Future, epub: EpubWriter):
 
 
 def add_getting_chapter_concurrent_task(
-    book: Book, parser: HTMLParser, crawler: Crawler, epub: EpubWriter
+    book: Book,
+    parser: HTMLParser,
+    crawler: Crawler,
+    epub: EpubWriter,
+    opencc: OpenCCModel | None,
 ):
     with ThreadPoolExecutor(max_workers=config.MAXIMUM_THREAD) as executor:
         futures = []
+        index = 0
         for chapter in book.chapters:
+            index += 1
+            # if index > 5:
+            #     break
             futures.append(
-                executor.submit(handle_thread, chapter, crawler, parser=parser)
+                executor.submit(
+                    handle_thread, chapter, crawler, parser=parser, opencc=opencc
+                )
             )
 
         for future in as_completed(futures):
             future.add_done_callback(lambda future: handle_thread_done(future, epub))
 
 
+def select_is_vertical_output(epub: EpubWriter):
+    is_vertical = get_bool_input("是否轉換為直書？(Y/N)", ["Y", "y"])
+    if not is_vertical:
+        return
+    epub.add_global_style(create_vertical_writing_style(EpubDirection.LTR))
+
+
 if __name__ == "__main__":
-    crawler = get_crawler()
-    book: Book = parse_book(crawler)
+    # TODO: Add keyword converter
+    current_opencc = select_opencc_model()
+    crawler, book_url = get_crawler()
+    book: Book = parse_book(crawler=crawler, url=book_url, opencc=current_opencc)
 
     chapter_parser = select_chapter_parser(
         chapter_link=book.chapters[0], crawler=crawler
@@ -118,7 +158,13 @@ if __name__ == "__main__":
     epub = EpubWriter(metadata)
 
     add_getting_chapter_concurrent_task(
-        book=book, parser=chapter_parser, crawler=crawler, epub=epub
+        book=book,
+        parser=chapter_parser,
+        crawler=crawler,
+        epub=epub,
+        opencc=current_opencc,
     )
 
+    select_is_vertical_output(epub)
     epub.build(os.path.join(output_path, output_file_name))
+    press_to_exit("EPUB製作完成")

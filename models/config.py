@@ -7,4 +7,4 @@ class Config(BaseSettings):
     MAXIMUM_THREAD: int
 
     class Config:
-        env_file = ".env"
+        env_file = "config"

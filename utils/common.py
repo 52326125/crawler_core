@@ -1,4 +1,4 @@
-from typing import Callable, Optional, TypeVar
+from typing import Callable, List, Optional, TypeVar
 
 
 T = TypeVar("T")
@@ -29,3 +29,11 @@ def get_int_input(description: str, min: Optional[int], max: Optional[int]) -> i
             return int(result)
         except ValueError:
             print("無效的輸入，請重新輸入")
+
+
+def get_bool_input(description: str, acceptance_key: List[str]) -> bool:
+    result = input(description)
+    for key in acceptance_key:
+        if result == key:
+            return True
+    return False
