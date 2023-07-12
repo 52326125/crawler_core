@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, Future, as_completed
 import os
 import sys
-from typing import Tuple
+from typing import Optional, Tuple
 from crawler import Crawler
 from crawler.dispatcher import dispatch_crawler
 from crawler.golden_house import GoldenHouse
@@ -20,12 +20,23 @@ config = get_config()
 default_parser = HTMLParser.DEFAULT
 
 
-def press_to_exit():
+def press_to_exit(description: Optional[str]):
     # TODO: Accomplish needed
+    if description is not None:
+        print(description)
     print("點擊任意鍵後退出...")
     key = input()
     if key:
         os._exit()
+
+
+def get_crawler() -> Crawler:
+    book_url = input("請輸入書本網址：")
+    crawler = dispatch_crawler(book_url)
+    if crawler is None:
+        print("無法正確匹配抓取器")
+        press_to_exit()
+    return crawler
 
 
 @select_parser(parser_key="parser")
@@ -77,14 +88,24 @@ def handle_thread_done(future: Future, epub: EpubWriter):
     epub.add_chapter(props, content)
 
 
-if __name__ == "__main__":
-    book_url = input("請輸入書本網址：")
-    crawler = dispatch_crawler(book_url)
-    if crawler is None:
-        print("無法正確匹配抓取器")
-        press_to_exit()
+def add_getting_chapter_concurrent_task(
+    book: Book, parser: HTMLParser, crawler: Crawler, epub: EpubWriter
+):
+    with ThreadPoolExecutor(max_workers=config.MAXIMUM_THREAD) as executor:
+        futures = []
+        for chapter in book.chapters:
+            futures.append(
+                executor.submit(handle_thread, chapter, crawler, parser=parser)
+            )
 
-    book = parse_book(crawler)
+        for future in as_completed(futures):
+            future.add_done_callback(lambda future: handle_thread_done(future, epub))
+
+
+if __name__ == "__main__":
+    crawler = get_crawler()
+    book: Book = parse_book(crawler)
+
     chapter_parser = select_chapter_parser(
         chapter_link=book.chapters[0], crawler=crawler
     )
@@ -92,19 +113,12 @@ if __name__ == "__main__":
     output_path = os.path.join(config.STORAGE_PATH, crawler.website)
     os.makedirs(output_path, exist_ok=True)
     output_file_name = f"{book.identifier}.epub"
+
     metadata = EpubMetadata(title=book.title, identifier=book.identifier)
     epub = EpubWriter(metadata)
 
-    with ThreadPoolExecutor(max_workers=config.MAXIMUM_THREAD) as executor:
-        futures = []
-        for index, chapter in enumerate(book.chapters):
-            # if index >= 5:
-            #     break
-            futures.append(
-                executor.submit(handle_thread, chapter, crawler, parser=chapter_parser)
-            )
-
-        for future in as_completed(futures):
-            future.add_done_callback(lambda future: handle_thread_done(future, epub))
+    add_getting_chapter_concurrent_task(
+        book=book, parser=chapter_parser, crawler=crawler, epub=epub
+    )
 
     epub.build(os.path.join(output_path, output_file_name))
