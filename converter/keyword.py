@@ -1,4 +1,4 @@
-from models.converter.converter import KeywordDict
+from converter.models.converter import KeywordDict
 
 
 def convert_keyword(content: str, dicts: list[KeywordDict]) -> str:

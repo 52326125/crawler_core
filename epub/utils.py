@@ -1,4 +1,4 @@
-from models.epub.metadata import EpubDirection
+from epub.models.metadata import EpubDirection
 
 
 def create_vertical_writing_style(direction: EpubDirection):

@@ -1,4 +1,4 @@
-from models.crawler.config import CrawlerConfig
+from crawler.models.config import CrawlerConfig
 
 
 GoldenHouseConfig = CrawlerConfig(

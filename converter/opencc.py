@@ -1,4 +1,4 @@
-from models.converter.opencc import OpenCCModel
+from converter.models.opencc import OpenCCModel
 from opencc import OpenCC
 
 

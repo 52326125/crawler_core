@@ -2,7 +2,7 @@ from typing import TypedDict
 
 from pydantic import BaseModel
 
-from models.converter.opencc import OpenCCModel
+from converter.models.opencc import OpenCCModel
 
 
 class KeywordDict(TypedDict):

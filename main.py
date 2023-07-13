@@ -5,11 +5,11 @@ from crawler import Crawler
 from crawler.dispatcher import dispatch_crawler
 from epub.utils import create_vertical_writing_style
 from epub.writer import EpubWriter
-from models.converter.opencc import OpenCCModel
-from models.crawler import Book, Chapter, ChapterLink
-from models.epub.chapter import EpubChapterProps
-from models.epub.metadata import EpubDirection, EpubMetadata
-from models.htmlParser import HTMLParser
+from converter.models.opencc import OpenCCModel
+from crawler.models import Book, Chapter, ChapterLink
+from epub.models.chapter import EpubChapterProps
+from epub.models.metadata import EpubDirection, EpubMetadata
+from crawler.models.htmlParser import HTMLParser
 from utils.common import exec_with_description, get_bool_input, get_int_input
 from utils.config import get_config
 from utils.wrapper import select_parser

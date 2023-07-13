@@ -7,9 +7,9 @@ from ebooklib.epub import (
     EpubNav,
     EpubImage,
 )
-from models.epub.chapter import EpubChapterProps, EpubImageProps
+from epub.models.chapter import EpubChapterProps, EpubImageProps
 
-from models.epub.metadata import EpubMetadata
+from epub.models.metadata import EpubMetadata
 
 
 class EpubWriter:

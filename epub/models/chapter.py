@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from models.epub import EpubBase
+from epub.models import EpubBase
 
 
 class EpubAssets(BaseModel):

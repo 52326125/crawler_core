@@ -1,4 +1,4 @@
-from models.htmlParser import HTMLParser
+from crawler.models.htmlParser import HTMLParser
 from utils.common import get_int_input
 
 

@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
-from models.converter.opencc import OpenCCModel
+from converter.models.opencc import OpenCCModel
 
-from models.crawler import Book, Chapter, CrawlerWebsite
-from models.crawler.config import CrawlerConfig
-from models.htmlParser import HTMLParser
+from crawler.models import Book, Chapter, CrawlerWebsite
+from crawler.models.config import CrawlerConfig
+from crawler.models.htmlParser import HTMLParser
 
 
 class Crawler(ABC):

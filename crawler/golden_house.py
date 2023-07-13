@@ -4,11 +4,11 @@ from bs4 import BeautifulSoup
 import requests
 from converter.opencc import convert_opencc
 from crawler.config.golden_house import GoldenHouseConfig
-from models.converter.opencc import OpenCCModel
-from models.crawler import Chapter, CrawlerWebsite
-from models.htmlParser import HTMLParser
+from converter.models.opencc import OpenCCModel
+from crawler.models import Chapter, CrawlerWebsite
+from crawler.models.htmlParser import HTMLParser
 from crawler import Crawler
-from models.crawler import Book, ChapterLink
+from crawler.models import Book, ChapterLink
 from crawler.retry import retry
 import uuid
 

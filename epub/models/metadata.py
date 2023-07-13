@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Optional
 
-from models.epub import EpubBase
+from epub.models import EpubBase
 
 
 class EpubDirection(str, Enum):
