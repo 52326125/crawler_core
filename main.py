@@ -109,6 +109,18 @@ def handle_thread_done(future: Future, epub: EpubWriter):
     epub.add_chapter(props, content)
 
 
+def get_epub_metadata(book_title: str) -> EpubMetadata:
+    input_title = input("請輸入書名：")
+    direction = input("請輸入書本方向，預設為ltr：")
+    author = input("請輸入本書作者：")
+
+    return EpubMetadata(
+        title=input_title or book_title,
+        direction=direction or EpubDirection.LTR,
+        authors=[author],
+    )
+
+
 def add_getting_chapter_concurrent_task(
     book: Book,
     parser: HTMLParser,
@@ -133,11 +145,11 @@ def add_getting_chapter_concurrent_task(
             future.add_done_callback(lambda future: handle_thread_done(future, epub))
 
 
-def select_is_vertical_output(epub: EpubWriter):
+def select_is_vertical_output(epub: EpubWriter, direction: EpubDirection):
     is_vertical = get_bool_input("是否轉換為直書？(Y/N)", ["Y", "y"])
     if not is_vertical:
         return
-    epub.add_global_style(create_vertical_writing_style(EpubDirection.LTR))
+    epub.add_global_style(create_vertical_writing_style(direction))
 
 
 if __name__ == "__main__":
@@ -154,7 +166,7 @@ if __name__ == "__main__":
     os.makedirs(output_path, exist_ok=True)
     output_file_name = f"{book.identifier}.epub"
 
-    metadata = EpubMetadata(title=book.title, identifier=book.identifier)
+    metadata = get_epub_metadata(book.title)
     epub = EpubWriter(metadata)
 
     add_getting_chapter_concurrent_task(
@@ -165,6 +177,6 @@ if __name__ == "__main__":
         opencc=current_opencc,
     )
 
-    select_is_vertical_output(epub)
+    select_is_vertical_output(epub, metadata.direction)
     epub.build(os.path.join(output_path, output_file_name))
     press_to_exit("EPUB製作完成")
