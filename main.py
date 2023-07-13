@@ -24,7 +24,7 @@ def press_to_exit(description: Optional[str]):
     # TODO: Accomplish needed
     if description is not None:
         print(description)
-    print("點擊任意鍵後退出...")
+    print("點擊確認鍵後退出...")
     key = input()
     if key:
         os._exit()
