@@ -19,3 +19,5 @@ cmdEnum = {
 ```
 pip list --format=freeze > requirements.txt
 ```
+
+version: v1.0.0
