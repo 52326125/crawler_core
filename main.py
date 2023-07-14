@@ -1,13 +1,14 @@
 from concurrent.futures import ThreadPoolExecutor, Future, as_completed
 import os
 from typing import List, Optional, Tuple
+import requests
 from crawler import Crawler
 from crawler.dispatcher import dispatch_crawler
 from epub.utils import create_vertical_writing_style
 from epub.writer import EpubWriter
 from converter.models.opencc import OpenCCModel
 from crawler.models import Book, Chapter, ChapterLink
-from epub.models.chapter import EpubChapterProps
+from epub.models.chapter import EpubChapterProps, EpubImageProps
 from epub.models.metadata import EpubDirection, EpubMetadata
 from crawler.models.htmlParser import HTMLParser
 from utils.common import (
@@ -90,14 +91,19 @@ def select_chapter_parser(
 
 def get_epub_metadata(book_title: str) -> EpubMetadata:
     input_title = input("請輸入書名：")
-    direction = input("請輸入書本方向，預設為ltr：")
+    direction = input("請輸入書本方向，預設為rtl：")
     author = input("請輸入本書作者：")
 
     return EpubMetadata(
         title=input_title or book_title,
-        direction=direction or EpubDirection.LTR,
+        direction=direction or EpubDirection.RTL,
         authors=[author],
     )
+
+
+def get_book_cover(url: str) -> EpubImageProps:
+    response = requests.get(url)
+    return EpubImageProps(file_name="cover.jpg", file=response.content, is_cover=True)
 
 
 def handle_thread(
@@ -117,7 +123,7 @@ def handle_thread(
     props = EpubChapterProps(
         identifier=chapter.identifier,
         title=chapter.title,
-        file_name=f"{chapter.identifier}.xhtml",
+        file_name=chapter.identifier,
     )
     return [props, chapter.content, index]
 
@@ -126,7 +132,6 @@ def add_getting_chapter_concurrent_task(
     book: Book,
     parser: HTMLParser,
     crawler: Crawler,
-    epub: EpubWriter,
     opencc: OpenCCModel | None,
 ):
     with ThreadPoolExecutor(max_workers=config.MAXIMUM_THREAD) as executor:
@@ -169,18 +174,20 @@ if __name__ == "__main__":
         chapter_link=book.chapters[0], crawler=crawler
     )
 
+    metadata = get_epub_metadata(book.title)
+    epub = EpubWriter(metadata)
+
+    coverProps = get_book_cover(book.cover_url)
+    epub.add_image(coverProps)
+
     output_path = get_real_path(os.path.join(config.STORAGE_PATH, crawler.website))
     os.makedirs(output_path, exist_ok=True)
     output_file_name = f"{book.identifier}.epub"
-
-    metadata = get_epub_metadata(book.title)
-    epub = EpubWriter(metadata)
 
     chapter_data = add_getting_chapter_concurrent_task(
         book=book,
         parser=chapter_parser,
         crawler=crawler,
-        epub=epub,
         opencc=current_opencc,
     )
     for chapter in chapter_data:
