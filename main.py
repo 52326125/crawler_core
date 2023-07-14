@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, Future, as_completed
 import os
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 from crawler import Crawler
 from crawler.dispatcher import dispatch_crawler
 from epub.utils import create_vertical_writing_style
@@ -10,7 +10,12 @@ from crawler.models import Book, Chapter, ChapterLink
 from epub.models.chapter import EpubChapterProps
 from epub.models.metadata import EpubDirection, EpubMetadata
 from crawler.models.htmlParser import HTMLParser
-from utils.common import exec_with_description, get_bool_input, get_int_input
+from utils.common import (
+    exec_with_description,
+    get_bool_input,
+    get_int_input,
+    get_real_path,
+)
 from utils.config import get_config
 from utils.wrapper import select_parser
 
@@ -83,32 +88,6 @@ def select_chapter_parser(
     return parser
 
 
-def handle_thread(
-    chapter_link: ChapterLink,
-    crawler: Crawler,
-    parser: HTMLParser,
-    opencc: OpenCCModel | None,
-) -> Tuple[EpubChapterProps, Chapter]:
-    chapter = exec_with_description(
-        crawler.get_chapter,
-        url=chapter_link["url"],
-        parser=parser,
-        description=f"獲取章節：{chapter_link['title']}",
-        opencc=opencc,
-    )
-    props = EpubChapterProps(
-        identifier=chapter.identifier,
-        title=chapter.title,
-        file_name=f"{chapter.identifier}.xhtml",
-    )
-    return [props, chapter.content]
-
-
-def handle_thread_done(future: Future, epub: EpubWriter):
-    props, content = future.result()
-    epub.add_chapter(props, content)
-
-
 def get_epub_metadata(book_title: str) -> EpubMetadata:
     input_title = input("請輸入書名：")
     direction = input("請輸入書本方向，預設為ltr：")
@@ -121,6 +100,28 @@ def get_epub_metadata(book_title: str) -> EpubMetadata:
     )
 
 
+def handle_thread(
+    chapter_link: ChapterLink,
+    crawler: Crawler,
+    parser: HTMLParser,
+    opencc: OpenCCModel | None,
+    index: int,
+) -> Tuple[EpubChapterProps, Chapter, int]:
+    chapter = exec_with_description(
+        crawler.get_chapter,
+        url=chapter_link["url"],
+        parser=parser,
+        description=f"獲取章節：{chapter_link['title']}",
+        opencc=opencc,
+    )
+    props = EpubChapterProps(
+        identifier=chapter.identifier,
+        title=chapter.title,
+        file_name=f"{chapter.identifier}.xhtml",
+    )
+    return [props, chapter.content, index]
+
+
 def add_getting_chapter_concurrent_task(
     book: Book,
     parser: HTMLParser,
@@ -129,24 +130,30 @@ def add_getting_chapter_concurrent_task(
     opencc: OpenCCModel | None,
 ):
     with ThreadPoolExecutor(max_workers=config.MAXIMUM_THREAD) as executor:
-        futures = []
-        index = 0
-        for chapter in book.chapters:
-            index += 1
-            # if index > 5:
-            #     break
+        futures: List[Future] = []
+        result: List[Tuple[EpubChapterProps, str, int]] = []
+        for index, chapter in enumerate(book.chapters):
             futures.append(
                 executor.submit(
-                    handle_thread, chapter, crawler, parser=parser, opencc=opencc
+                    handle_thread,
+                    chapter,
+                    crawler,
+                    parser=parser,
+                    opencc=opencc,
+                    index=index,
                 )
             )
 
         for future in as_completed(futures):
-            future.add_done_callback(lambda future: handle_thread_done(future, epub))
+            response = future.result()
+            result.append(response)
+
+    result.sort(key=lambda el: el[2])
+    return result
 
 
 def select_is_vertical_output(epub: EpubWriter, direction: EpubDirection):
-    is_vertical = get_bool_input("是否轉換為直書？(Y/N)", ["Y", "y"])
+    is_vertical = get_bool_input("是否轉換為直書？(Y/N)", acceptance_key=["Y", "y"])
     if not is_vertical:
         return
     epub.add_global_style(create_vertical_writing_style(direction))
@@ -162,20 +169,22 @@ if __name__ == "__main__":
         chapter_link=book.chapters[0], crawler=crawler
     )
 
-    output_path = os.path.join(config.STORAGE_PATH, crawler.website)
+    output_path = get_real_path(os.path.join(config.STORAGE_PATH, crawler.website))
     os.makedirs(output_path, exist_ok=True)
     output_file_name = f"{book.identifier}.epub"
 
     metadata = get_epub_metadata(book.title)
     epub = EpubWriter(metadata)
 
-    add_getting_chapter_concurrent_task(
+    chapter_data = add_getting_chapter_concurrent_task(
         book=book,
         parser=chapter_parser,
         crawler=crawler,
         epub=epub,
         opencc=current_opencc,
     )
+    for chapter in chapter_data:
+        epub.add_chapter(props=chapter[0], content=chapter[1])
 
     select_is_vertical_output(epub, metadata.direction)
     epub.build(os.path.join(output_path, output_file_name))

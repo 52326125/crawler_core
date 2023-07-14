@@ -1,4 +1,5 @@
 from pydantic import BaseSettings
+from utils.common import get_real_path
 
 
 class Config(BaseSettings):
@@ -7,4 +8,4 @@ class Config(BaseSettings):
     MAXIMUM_THREAD: int
 
     class Config:
-        env_file = "config"
+        env_file = get_real_path("config")

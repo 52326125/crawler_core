@@ -1,3 +1,5 @@
+import os
+import sys
 from typing import Callable, List, Optional, TypeVar
 
 
@@ -7,12 +9,12 @@ V = TypeVar("V")
 
 def exec_with_description(fn: Callable[[V], T], description: str = "", **kwargs) -> T:
     if description:
-        print(description + "中...")
+        print(description + " 中...")
 
     result = fn(**kwargs)
 
     if description:
-        print(description + "成功")
+        print(description + " 成功")
 
     return result
 
@@ -37,3 +39,12 @@ def get_bool_input(description: str, acceptance_key: List[str]) -> bool:
         if result == key:
             return True
     return False
+
+
+def get_real_path(file_path: str) -> str:
+    app_path = ""
+    if getattr(sys, "frozen", False):
+        app_path = os.path.dirname(sys.executable)
+    elif __file__:
+        app_path = os.getcwd()
+    return os.path.join(app_path, file_path)
