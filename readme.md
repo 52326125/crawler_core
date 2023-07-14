@@ -1,23 +1,14 @@
-# Crawler core
-It's a part of crawler project, for crawl content from website and build ebook.
+# Description
+爬蟲及epub檔製作
 
-# Message body structure
-```
-cmdEnum = {
-  "CRAWL_BOOK",
-  "CRAWL_CHAPTER",
-  "EPUB_BUILD"
-}
-
-{
-  "cmd": cmdEnum,
-  "payload": {}
-}
-```
-
-# Export env
+# Development
+## Python >=3.11
+## Env
+export
 ```
 pip list --format=freeze > requirements.txt
 ```
-
-version: v1.0.0
+install
+```
+pip install -r requirements.txt
+```
