@@ -7,7 +7,7 @@ from ebooklib.epub import (
     EpubNav,
     EpubImage,
 )
-from epub.models.chapter import EpubChapterProps, EpubImageProps
+from epub.models.chapter import EpubChapterProps, EpubCoverProps, EpubImageProps
 
 from epub.models.metadata import EpubMetadata
 
@@ -34,8 +34,8 @@ class EpubWriter:
             title=props.title,
             media_type="application/xhtml+xml",
             file_name=props.file_name + ".xhtml",
+            content=content,
         )
-        chapter.set_content(content)
         self.__book.add_item(chapter)
         self.__chapters.append(chapter)
 
@@ -48,32 +48,31 @@ class EpubWriter:
         self.__global_style.set_content(content)
         self.__book.add_item(self.__global_style)
 
-    def build(self, file_name: str, sort: bool = True):
+    def build(self, file_name: str):
         ncx = EpubNcx()
         nav = EpubNav()
         self.__book.add_item(ncx)
         self.__book.add_item(nav)
 
-        if sort:
-            self.__book.toc = sorted(
-                self.__chapters, key=lambda chapter: chapter.file_name
-            )
-            self.__book.items.sort(key=lambda chapter: chapter.file_name)
-        else:
-            self.__book.toc = self.__chapters
-
         if self.__global_style:
             for chapter in self.__chapters:
                 chapter.add_item(self.__global_style)
 
-        self.__book.spine = [nav] + self.__chapters
+        final_chapters = self.__chapters[0:1] + [nav] + self.__chapters[1:]
+        self.__book.toc.extend(final_chapters)
+        self.__book.spine.extend(final_chapters)
         write_epub(file_name, self.__book)
 
     def add_image(self, props: EpubImageProps):
         image = EpubImage(
             file_name=props.file_name, content=props.file, uid=props.identifier
         )
-        if props.is_cover:
-            self.__book.set_cover(file_name=props.file_name, content=props.file)
-        else:
-            self.__book.add_item(image)
+        self.__book.add_item(image)
+
+    def add_cover(self, props: EpubCoverProps):
+        self.__book.set_cover(
+            content=props.file, create_page=False, file_name=props.file_name
+        )
+        content = f'<img alt="cover" src="{props.file_name}"/>'
+        props = EpubChapterProps(file_name="cover", title="封面", identifier="cover")
+        self.add_chapter(props, content)

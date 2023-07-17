@@ -13,3 +13,8 @@ class EpubChapterProps(EpubBase, EpubAssets):
 class EpubImageProps(EpubBase, EpubAssets):
     file: bytes
     is_cover: bool = False
+
+
+class EpubCoverProps(EpubBase, EpubAssets):
+    file: bytes
+    is_cover: bool = True

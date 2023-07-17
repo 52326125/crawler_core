@@ -8,7 +8,7 @@ from epub.utils import create_vertical_writing_style
 from epub.writer import EpubWriter
 from converter.models.opencc import OpenCCModel
 from crawler.models import Book, Chapter, ChapterLink
-from epub.models.chapter import EpubChapterProps, EpubImageProps
+from epub.models.chapter import EpubChapterProps, EpubCoverProps
 from epub.models.metadata import EpubDirection, EpubMetadata
 from crawler.models.htmlParser import HTMLParser
 from utils.common import (
@@ -101,9 +101,9 @@ def get_epub_metadata(book_title: str) -> EpubMetadata:
     )
 
 
-def get_book_cover(url: str) -> EpubImageProps:
+def get_book_cover(url: str) -> EpubCoverProps:
     response = requests.get(url)
-    return EpubImageProps(file_name="cover.jpg", file=response.content, is_cover=True)
+    return EpubCoverProps(file_name="cover.jpg", file=response.content, is_cover=True)
 
 
 def handle_thread(
@@ -178,7 +178,7 @@ if __name__ == "__main__":
     epub = EpubWriter(metadata)
 
     coverProps = get_book_cover(book.cover_url)
-    epub.add_image(coverProps)
+    epub.add_cover(coverProps)
 
     output_path = get_real_path(os.path.join(config.STORAGE_PATH, crawler.website))
     os.makedirs(output_path, exist_ok=True)
