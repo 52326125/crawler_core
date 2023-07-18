@@ -9,9 +9,11 @@ def retry(func: Callable):
             try:
                 result = func(*args, **kwargs)
                 return result
-            except:
+            except Exception as err:
                 retry_times += 1
                 print("failed")
+                if retry_times == 3:
+                    print("retry failed, reason:\n" + str(err))
                 sleep(0.5)
 
     return wrapper
