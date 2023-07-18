@@ -3,7 +3,7 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 import requests
 from converter.opencc import convert_opencc
-from crawler.config.golden_house import golden_house_config
+from crawler.config.zeus import zeus_config
 from converter.models.opencc import OpenCCModel
 from crawler.models import Chapter, CrawlerWebsite
 from crawler.models.htmlParser import HTMLParser
@@ -12,11 +12,11 @@ from crawler.models import Book, ChapterLink
 from crawler.utils.retry import retry
 
 
-class GoldenHouse(Crawler):
-    website = CrawlerWebsite.GOLDEN_HOUSE
+class Zeus(Crawler):
+    website = CrawlerWebsite.ZEUS
 
     def __init__(self) -> None:
-        self.config = golden_house_config
+        self.config = zeus_config
 
     # TODO: should throw error if excepted
     def get_book(
@@ -70,7 +70,7 @@ class GoldenHouse(Crawler):
 
         titleTag = soup.select(self.config.TITLE_QUERY_SELECTOR)[0]
         title = titleTag.get_text().strip()
-        chapter_id = url.split(",")[-1]
+        chapter_id = url.split("_")[-1].split(".")[0]
 
         for p in content:
             result = result + convert_opencc(str(p).strip(), opencc)
@@ -83,4 +83,4 @@ class GoldenHouse(Crawler):
         return self.config.COVER_BASE_URL + book_id + ".jpg"
 
     def get_book_id(self, url: str) -> str:
-        return url.split("/")[-1]
+        return url.split("/")[-1].split(".")[0]

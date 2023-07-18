@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 class CrawlerWebsite(str, Enum):
     GOLDEN_HOUSE = "golden_house"
+    ZEUS = "zeus"
 
 
 class BaseInstance(BaseModel):

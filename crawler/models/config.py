@@ -10,3 +10,6 @@ class CrawlerConfig(BaseModel):
     # chapter
     CONTENT_QUERY_SELECTOR: str
     TITLE_QUERY_SELECTOR: str
+    # regex
+    BOOK_ID_REGEX: str
+    CHAPTER_ID_REGEX: str
